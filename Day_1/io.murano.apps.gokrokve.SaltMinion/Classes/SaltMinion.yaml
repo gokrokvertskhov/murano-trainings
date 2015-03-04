@@ -1,0 +1,117 @@
+Namespaces:
+  =: io.murano.apps.gokrokve01
+  std: io.murano
+  res: io.murano.resources
+  sys: io.murano.system
+  apps: io.murano.apps
+
+#This is a name of a Simple VM Class
+#
+Name: SaltMinion
+
+# This is a parent class fo SimpleVM.
+# Applicatoin class has two methods:
+#  initialize
+#  deploy
+
+Extends: std:Application
+
+Properties:
+  name:
+    Contract: $.string().notNull()
+
+  instance:
+    Contract: $.class(res:Instance).notNull()
+
+  master_ip:
+    Contract: $.string().notNull()
+
+  host:
+    Contract: $.string()
+    Usage: Out
+
+  user:
+    Contract: $.string()
+    Usage: Out
+# Workflow section is deprecated
+# Use Methods instead.
+#Workflow:
+Methods:
+  initialize:
+    Body:
+      - $.environment: $.find(std:Environment).require()
+# This is a deploy method for our new app
+# This method will be called from Environment class method deploy.
+
+  deploy:
+    Body:
+      # Attributes are runtime properties which are not visible to the user.
+      # Use attributes to store some internal data between deployments.
+      # Attributes data is persistent. It is stored as a part of Object Model.
+      # $.getAttr(name, default_value) - gets attribute from the Object model
+      # $.setAttr(name, value) - store attribute value in the Object Model
+      # Only basic types are supported (boolean, int, string)
+      - If: not $.getAttr(deployed, false)
+        Then:
+          # This is a log method to send status log message back to UI
+          # This is what users will see in the UI during deployment time
+
+          - $.environment.reporter.report($this, 'Creating a VM ')
+
+          # Security groups object is a list of dicts [{}]
+          # each dict element in this list should have following key:value entries:
+          #  FromPort: value - lower boundary of the port range
+          #  ToPort: value - upper boundary of the port range
+          #  IpProtocol: <tcp|udp> - transport protocol type TP or UDP
+          #  External: <true|false> - if true it opens for CIDR:0.0.0.0/0
+          #                           if false it opens port only for SecGroup members
+          - $securityGroupIngress:
+              - ToPort: 22
+                FromPort: 22
+                IpProtocol: tcp
+                External: True
+          - $.environment.securityGroupManager.addGroupIngress($securityGroupIngress)
+          # Now lets ask our instance to deploy itself.
+          # Inside deploy method there are additional steps which configure networks for the environment
+          - $.instance.deploy()
+          - $.environment.reporter.report($this, 'The new VM is created')
+          # Add Script execution here
+          - $.addSaltStack()
+          # Save host information to local variables
+          - $.host: $.instance.ipAddresses[0]
+          - $.user: 'root'
+          # Format log message based on variables values
+          - $msg: format('{0}@{1}', $.user, $.host)
+          - $.environment.reporter.report($this, 'The VM is available ' + $msg)
+          - $.setAttr(deployed, True)
+
+  addSaltStack:
+    Body:
+       - $.environment.reporter.report($this, 'Installing SaltStack Minion')
+       - $resources: new(sys:Resources)
+       - $command: $resources.yaml('InstallSaltStack.template').bind(dict(
+           master => $.master_ip))
+       - Try:
+           - $.instance.agent.call($command, $resources)
+         Catch:
+           - With: 'murano.engine.system.agent.AgentException'
+             As: exc
+             Do:
+               - $.environment.reporter.report($this, 'Script execution failed')
+
+
+  restartVM:
+    Usage: Action
+    Body:
+      - $.environment.reporter.report($this, 'Restarting the VM')
+      # Create new Resources class to have an access to the package resources
+      # Package resources are stored in Resource folder
+      - $resources: new(sys:Resources)
+      # Load yaml file with execution plan. Bind execution plan parameters with actual values.
+      - $command: $resources.yaml('Restart.template').bind(dict(
+          time => 'now'
+          ))
+      # Send execution plan to the agent on the instance
+      - $result: $.instance.agent.call($command, $resources).sdterr
+      - $.environment.reporter.report($this, 'Restart command was sent to VM')
+

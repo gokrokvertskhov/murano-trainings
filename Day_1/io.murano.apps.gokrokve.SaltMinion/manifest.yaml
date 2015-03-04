@@ -1,0 +1,10 @@
+Format: 1.0
+Type: Application
+FullName: io.murano.apps.gokrokve01.SaltMinion
+Name: Test SaltMinion
+Description: |
+ This is a simple test app with a single VM.
+Author: 'Mirantis, Inc'
+Tags: [test]
+Classes:
+ io.murano.apps.gokrokve01.SaltMinion: SaltMinion.yaml

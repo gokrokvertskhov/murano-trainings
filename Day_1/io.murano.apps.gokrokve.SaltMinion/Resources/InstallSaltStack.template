@@ -1,0 +1,21 @@
+FormatVersion: 2.0.0
+Version: 1.0.0
+Name: Restart VM
+
+Parameters:
+  master: $master
+
+
+Body: |
+  return install(args.master).stdout
+
+Scripts:
+  install:
+    Type: Application
+    Version: 1.0.0
+    EntryPoint: install.sh
+    Files: 
+      - minion.conf
+    Options:
+      captureStdout: true
+      captureStderr: true
