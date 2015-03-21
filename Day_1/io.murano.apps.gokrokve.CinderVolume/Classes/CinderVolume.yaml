@@ -1,0 +1,62 @@
+Namespaces:
+  =: io.murano.apps.gokrokve
+  std: io.murano
+  res: io.murano.resources
+  sys: io.murano.system
+  apps: io.murano.apps
+
+#This is a name of a Simple VM Class
+#
+Name: CinderVolume
+Extends: std:Application
+
+Properties:
+  name:
+    Contract: $.string().notNull()
+
+  size:
+    Contract: $.int().notNull()
+    Default: 1
+
+Methods:
+  initialize:
+    Body:
+      - $.environment: $.find(std:Environment).require()
+
+
+  deploy:
+    Body:
+          - $.environment.reporter.report($this, 'Creating a new volume ')
+          - $volumename: ('vol_'+$.name)
+          - $template:
+              resources:
+                $volumename:
+                   type: OS::Cinder::Volume
+                   properties:
+                     size: $.size
+                     description: Volume for stack
+          - Try:
+             - $.environment.stack.updateTemplate($template)
+            Catch:
+            With: exc as  HeatExeption
+              - $.environment.reporter.report($.environment.stack.template)
+          - $.environment.stack.push()
+          - $.setAttr(deployed, True)
+  
+  attachVolume:
+    Arguments:
+      instance:
+        Contract: $.class(res:Instance)
+    Body:
+      - $.environment.reporter.report($this, 'Attaching the volume to the VM')
+      - $resources: new(sys:Resources)
+      - $volumename: ('vol_'+$.name)
+      - $template: $resources.yaml('attach-volume.hot').bind(dict(
+           name => $.name,
+           volumename => $volumename,
+           instance_name => $instance.name
+          ))
+      - $.environment.stack.updateTemplate($template)
+      - $.environment.stack.push()
+      - $.environment.reporter.report($this, 'The volume has attached')
+

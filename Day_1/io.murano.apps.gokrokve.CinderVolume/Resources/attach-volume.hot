@@ -1,0 +1,6 @@
+resources:
+  volume_attachment_$name:
+      type: OS::Cinder::VolumeAttachment
+      properties:
+        volume_id: { get_resource: $volumename }
+        instance_uuid: { get_resource: $instance_name}

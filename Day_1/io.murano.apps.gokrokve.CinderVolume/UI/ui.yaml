@@ -1,0 +1,27 @@
+Version: 2
+
+Application:
+  ?:
+    type: io.murano.apps.gokrokve.CinderVolume
+  name: $.appConfiguration.name
+  size: $.appConfiguration.size_field
+
+
+Forms:
+  - appConfiguration:
+      fields:
+        - name: name
+          type: string
+          label: Application Name
+          initial: Tomcat
+          description: >-
+            Enter a desired name for the application. Just A-Z, a-z, 0-9, dash and
+            underline are allowed
+        - name: size_field
+          type: integer
+          label: Volume Size
+          initial: 1
+          description: >-
+            Cinder volume size in GB
+
+
