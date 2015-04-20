@@ -3,8 +3,8 @@ Type: Application
 FullName: io.murano.apps.test.SimpleVM
 Name: Test SimpleVM
 Description: |
- This is a simple test app with a single VM.
+  This is a simple test app with a single VM.
 Author: 'Mirantis, Inc'
 Tags: [test]
 Classes:
- io.murano.apps.test.SimpleVM: SimpleVM.yaml
+ io.murano.apps.test.SimpleVM: SimpleVM.murano

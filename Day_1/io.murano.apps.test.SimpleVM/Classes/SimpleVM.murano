@@ -53,7 +53,7 @@ Methods:
           # This is a log method to send status log message back to UI
           # This is what users will see in the UI during deployment time
 
-          - $.environment.reporter.report($this, 'Creating a VM ')
+          - $.environment.reporter.report($this, 'Creating a VM')
 
           # Security groups object is a list of dicts [{}]
           # each dict element in this list should have following key:value entries:
@@ -67,10 +67,14 @@ Methods:
                 FromPort: 22
                 IpProtocol: tcp
                 External: True
+              - ToPort: 80
+                FromPort: 80
+                IpProtocol: tcp
+                External: true
           - $.environment.securityGroupManager.addGroupIngress($securityGroupIngress)
           # Now lets ask our instance to deploy itself.
           # Inside deploy method there are additional steps which configure networks for the environment
-          - $.instance.deploy()
+          - $.instance.deploy() #Ask VM to crreate itself
           - $.environment.reporter.report($this, 'The new VM is created')
           # Save host information to local variables
           - $.host: $.instance.ipAddresses[0]
@@ -78,7 +82,7 @@ Methods:
           # Format log message based on variables values
           - $msg: format('{0}@{1}', $.user, $.host)
           - $.environment.reporter.report($this, 'The VM is available ' + $msg)
-          - $.setAttr(deployed, True)
+          - $.setAttr(deployed, true)
 
   restartVM:
     Usage: Action
@@ -94,4 +98,3 @@ Methods:
       # Send execution plan to the agent on the instance
       - $.instance.agent.call($command, $resources)
       - $.environment.reporter.report($this, 'Restart command was sent to VM')
-
